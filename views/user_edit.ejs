@@ -8,7 +8,8 @@
       	<p id="error_info"><%= error_info %></p>
       <% } %>
     </div>
-		<form id="form" class="ui form" action="<%= syzoj.utils.makeUrl(['user', edited_user.id, 'edit']) %>" method="post" onsubmit="return check()">
+		<form id="form" action="<%= syzoj.utils.makeUrl(['user', edited_user.id, 'edit']) %>" method="post" onsubmit="return check()">
+      <div class="ui form">
       <div class="field">
 	    	<label for="username">用户名</label>
 	    	<input type="text" id="username" name="username" value="<%= edited_user.username %>"<% if (!user.allowedManage) { %> readonly<% } %>>
@@ -38,11 +39,11 @@
           <input id="prefer_formatted_code" name="prefer_formatted_code" type="checkbox" <% if (edited_user.prefer_formatted_code) { %> checked<% } %>>
           <label>　</label>
         </div>
-	    </div>
-	    <div class="field">
-	    	<label for="information">个性签名</label>
-	    	<textarea class="font-content" rows="5" id="information" name="information"><%= edited_user.information %></textarea>
-	    </div>
+      </div>
+      <div class="field">
+      <label for="information">个性签名</label>
+        <textarea class="markdown-edit" rows="5" id="information" name="information"><%= edited_user.information %></textarea>
+      </div>
       <div class="field">
       <label class="ui header">密码</label>
         <input type="password" placeholder="原密码（留空则不修改）" name="old_password" id="old_password">
@@ -78,13 +79,21 @@
         </div>
       </div>
       <div style="text-align: center; margin-top: 30px; ">
-        <button type="submit" class="ui blue labeled icon button"><i class="ui icon edit"></i>修改</button>
+        <button id="submit_button" type="submit" class="ui blue labeled icon button"><i class="ui icon edit"></i>修改</button>
         <a href="<%= syzoj.utils.makeUrl(['user', edited_user.id]) %>" class="ui labeled icon button"><i class="ui icon angle left"></i>返回</a>
+      </div>
       </div>
 		</form>
 	</div>
 </div>
+<script>
+var bakDefine = define;
+define = undefined;
+</script>
 <script src="<%- lib('blueimp-md5/2.10.0/js/md5.min.js') %>"></script>
+<script>
+define = bakDefine;
+</script>
 <script type="text/javascript">
 function make_md5(tag) {
 	if (tag.val()) {

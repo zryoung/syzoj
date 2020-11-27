@@ -2,7 +2,7 @@ const enums = require('./enums');
 const util = require('util');
 const winston = require('winston');
 const msgPack = require('msgpack-lite');
-const fs = Promise.promisifyAll(require('fs-extra'));
+const fs = require('fs-extra');
 const interface = require('./judger_interfaces');
 const judgeResult = require('./judgeResult');
 
@@ -66,7 +66,7 @@ async function connect() {
 
       waitingForTask = true;
 
-      winston.verbose(`Judge client ${socket.id} emitted waitForTask.`);
+      winston.warn(`Judge client ${socket.id} emitted waitForTask.`);
 
       // Poll the judge queue, timeout = 10s.
       let obj;
@@ -80,9 +80,11 @@ async function connect() {
         return;
       }
 
+      winston.warn(`Judge task ${obj.data.content.taskId} poped from queue.`);
+
       // Re-push to queue if got task but judge client already disconnected.
       if (socket.disconnected) {
-        winston.warn(`Judge client ${socket.id} got task but disconnected re-pushing task to queue.`);
+        winston.warn(`Judge client ${socket.id} got task but disconnected re-pushing task ${obj.data.content.taskId} to queue.`);
         judgeQueue.push(obj.data, obj.priority);
         return;
       }
@@ -90,10 +92,10 @@ async function connect() {
       // Send task to judge client, and wait for ack.
       const task = obj.data;
       pendingAckTaskObj = obj;
-      winston.verbose(`Sending task ${task.content.taskId} to judge client ${socket.id}.`);
+      winston.warn(`Sending task ${task.content.taskId} to judge client ${socket.id}.`);
       socket.emit('onTask', msgPack.encode(task), () => {
         // Acked.
-        winston.verbose(`Judge client ${socket.id} acked task ${task.content.taskId}.`);
+        winston.warn(`Judge client ${socket.id} acked task ${task.content.taskId}.`);
         pendingAckTaskObj = null;
         waitingForTask = false;
       });
@@ -177,7 +179,7 @@ async function connect() {
         judge_state.max_memory = convertedResult.memory;
         judge_state.result = convertedResult.result;
         await judge_state.save();
-        await judge_state.updateRelatedInfo();
+        await judge_state.updateRelatedInfo(false);
       } else if (result.type == interface.ProgressReportType.Compiled) {
         if (!judge_state) return;
         judge_state.compilation = result.progress;
@@ -196,7 +198,7 @@ module.exports.judge = async function (judge_state, problem, priority) {
     case 'submit-answer':
       type = enums.ProblemType.AnswerSubmission;
       param = null;
-      extraData = await fs.readFileAsync(syzoj.model('file').resolvePath('answer', judge_state.code));
+      extraData = await fs.readFile(syzoj.model('file').resolvePath('answer', judge_state.code));
       break;
     case 'interaction':
       type = enums.ProblemType.Interaction;
@@ -222,16 +224,20 @@ module.exports.judge = async function (judge_state, problem, priority) {
 
   const content = {
     taskId: judge_state.task_id,
+    judgeId: judge_state.id,
     testData: problem.id.toString(),
     type: type,
     priority: priority,
+    realPriority: priority - parseInt(judge_state.id) / 10000000,
     param: param
   };
 
   judgeQueue.push({
     content: content,
     extraData: extraData
-  }, priority);
+  }, content.realPriority);
+
+  winston.warn(`Judge task ${content.taskId} enqueued.`);
 }
 
 module.exports.getCachedJudgeState = taskId => judgeStateCache.get(taskId);

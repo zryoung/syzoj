@@ -94,17 +94,17 @@
     <% include page %>
   </div>
   <% } %>
-   <% if (article.allowedComment) { %>
-   <form class="ui reply form" method="post" action="<%= syzoj.utils.makeUrl(['article', article.id, 'comment']) %>">
+    <% if (article.allowedComment) { %>
+    <form class="ui reply form" method="post" action="<%= syzoj.utils.makeUrl(['article', article.id, 'comment']) %>">
       <div class="field">
-        <textarea name="comment"></textarea>
+        <textarea name="comment" class="markdown-edit"></textarea>
       </div>
       <div style="text-align: center; ">
-      <button type="submit" class="ui labeled submit icon button">
+      <button id="submit_button" type="submit" class="ui labeled submit icon button">
         <i class="icon edit"></i> 回复
       </button>
       </div>
-   </form>
-   <% } %>
+    </form>
+  <% } %>
 </div>
 <% include footer %>
